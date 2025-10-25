@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Honours Project</title>
+  </head>
+  <body>
+    <canvas id="game-canvas" width="192" height="256"></canvas>
+    <textarea id="script-input" rows="50" cols="50">
+i = 0
+function frame()
+  r = math.rad(i)
+  setSpritePos(math.floor(88.5+math.sin(r)*45), math.floor(120.5+math.cos(r)*45))
+  i = i + 1
+end
+    </textarea>
+    <button>Recompile</button>
+  </body>
+</html>
