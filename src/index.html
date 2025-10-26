@@ -8,14 +8,7 @@
   </head>
   <body>
     <canvas id="game-canvas" width="192" height="256"></canvas>
-    <textarea id="script-input" rows="50" cols="50">
-i = 0
-function frame()
-  r = math.rad(i)
-  setSpritePos(math.floor(88.5+math.sin(r)*45), math.floor(120.5+math.cos(r)*45))
-  i = i + 1
-end
-    </textarea>
-    <button>Recompile</button>
+    <button id="recompile-button">Recompile</button>
+    <button id="copy-button">Copy Script as URL</button>
   </body>
 </html>

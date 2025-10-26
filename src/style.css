@@ -4,13 +4,7 @@ body {
 canvas {
     display: block;
     margin: auto;
-    width: calc(192px * 3);
+    width: min(calc(192px * 3), 100%);
     /*height: calc(256px * 3);*/
     image-rendering: pixelated;
-}
-textarea {
-    display: block;
-    margin: auto;
-    width: calc(192px * 3);
-    resize: vertical;
 }
