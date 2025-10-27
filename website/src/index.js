@@ -3,11 +3,11 @@ import {EditorView, basicSetup} from "codemirror"
 import {StreamLanguage} from "@codemirror/language"
 import {lua} from "@codemirror/legacy-modes/mode/lua"
 
-const initialCode = `i = 0
+const initialCode = `local f = 0
 function frame()
-  r = math.rad(i)
-  setSpritePos(math.floor(88.5+math.sin(r)*45), math.floor(120.5+math.cos(r)*45))
-  i = i + 1
+  local radians = f * math.pi * 2
+  setSpritePos(math.floor(88.5+math.sin(radians)*45), math.floor(120.5+math.cos(radians)*45))
+  f = f + FRAME_TIME
 end`;
 
 const params = new URLSearchParams(window.location.search);
@@ -45,10 +45,14 @@ var sprites = []
 
 sprites.push(new Sprite(0, 0, 16));
 
+const FRAME_TIME = 1.0 / 60.0
+const FRAME_TIME_MS = FRAME_TIME * 1000.0;
+
 const { LuaFactory } = require('wasmoon')
 const factory = new LuaFactory()
 async function getEngine(script_input) {
     const lua = await factory.createEngine()
+    lua.global.set('FRAME_TIME', FRAME_TIME);
     lua.global.set('setSpritePos', (x, y) => {
         sprites[0].x = x;
         sprites[0].y = y;
@@ -59,11 +63,9 @@ async function getEngine(script_input) {
         'frame': lua.global.get('frame'),
     };
 }
-
 let luaEngine = await getEngine();
 recompileButton.onclick = async function(){ luaEngine = await getEngine() };
 
-const targetFrameTime = 1.0 / 120.0 * 1000.0;
 let previousTimestamp;
 requestAnimationFrame(firstFrame);
 function firstFrame(timestamp) {
@@ -72,7 +74,7 @@ function firstFrame(timestamp) {
 }
 function mainLoop(timestamp) {
     const elapsed = timestamp - previousTimestamp;
-    if (elapsed > targetFrameTime) {
+    if (elapsed > FRAME_TIME_MS) {
         luaEngine.frame();
         ctx.beginPath();
         // Fill Background
@@ -82,11 +84,11 @@ function mainLoop(timestamp) {
         for (let sprite of sprites) {
             sprite.draw()
         }
-        if (elapsed > targetFrameTime * 5) {
+        if (elapsed > FRAME_TIME_MS * 5) {
             console.log("Elapsed time is large, skipping frames")
             previousTimestamp = timestamp;
         } else {
-            previousTimestamp += targetFrameTime;
+            previousTimestamp += FRAME_TIME_MS;
         }
     }
     requestAnimationFrame((t) => mainLoop(t));
