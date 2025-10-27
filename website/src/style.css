@@ -1,10 +1,38 @@
+html {
+    min-width: 200px;
+}
 body {
     margin: 0px;
 }
+main {
+  max-width: 95%;
+  margin-inline: auto;
+}
+p {
+    text-align: center;
+}
+.cm-editor {
+    outline: 2px solid grey;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+}
+button {
+    width: 18ch;
+    font-size: 1.2rem;
+    line-height: 1.5;
+    text-wrap: nowrap;
+    text-overflow: clip;
+}
 canvas {
+    margin-inline: auto;
+    max-width: 100%;
     display: block;
-    margin: auto;
     width: min(calc(192px * 3), 100%);
     /*height: calc(256px * 3);*/
     image-rendering: pixelated;
+}
+#qr-canvas {
+    outline: 2px solid grey;
+    display: none;
+    background: white;
 }

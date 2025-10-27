@@ -19,6 +19,7 @@
   "dependencies": {
     "@codemirror/legacy-modes": "^6.5.2",
     "codemirror": "^6.0.2",
+    "lean-qr": "^2.6.0",
     "wasmoon": "^1.16.0"
   }
 }
