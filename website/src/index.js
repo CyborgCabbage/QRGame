@@ -2,7 +2,7 @@ import './style.css';
 import {EditorView, basicSetup} from 'codemirror'
 import {StreamLanguage} from '@codemirror/language'
 import {lua} from '@codemirror/legacy-modes/mode/lua'
-import {generate} from 'lean-qr'
+import {correction, generate} from 'lean-qr'
 import {Engine, Game} from './engine.js'
 
 // DOM
@@ -21,17 +21,32 @@ function frame()
   f = f + FRAME_TIME
 end`;
 
+
+
 // Import/Export
-function urlToGame() {
+//Compression Stream: https://evanhahn.com/javascript-compression-streams-api-with-strings/
+async function urlToGame() {
     const params = new URLSearchParams(window.location.search);
-    const importedScript = params.get("s");
-    if (importedScript !== null) {
-        return new Game(importedScript);
-    }
-    return null;
+    const base64 = params.get("s");
+    if (base64 === null) return null;
+    const compressed = Uint8Array.fromBase64(base64, { alphabet: "base64url", omitPadding: true });
+    if (compressed.length === 0) return null;
+    const stream = new Blob([compressed]).stream();
+    const decompressedStream = stream.pipeThrough(new DecompressionStream("deflate-raw"));
+    const data = await new Response(decompressedStream).bytes();
+    const script = new TextDecoder().decode(data);
+    if (script.length === 0) return null;
+    return new Game(script);
 }
-function gameToUrl(game) {
-    return window.location.origin+window.location.pathname+"?s="+encodeURIComponent(game.script);
+async function gameToUrl(game) {
+    const data = new TextEncoder().encode(game.script);
+    const stream = new Blob([data]).stream();
+    const compressedStream = stream.pipeThrough(new CompressionStream("deflate-raw"));
+    const compressed = await new Response(compressedStream).bytes();
+    const base64 = compressed.toBase64({ alphabet: "base64url", omitPadding: true });
+    const params = new URLSearchParams();
+    params.set("s", base64);
+    return window.location.origin+window.location.pathname+"?"+params;
 }
 
 // Script Editor
@@ -53,7 +68,7 @@ function editorToGame() {
 
 // Engine
 const engine = new Engine(gameCanvas);
-let game = urlToGame();
+let game = await urlToGame();
 if (game === null) {
     game = new Game(INITIAL_SCRIPT);
 }
@@ -61,21 +76,25 @@ gameToEditor(game);
 // (could load the game directly here but want to make sure the editor works properly)
 engine.play(editorToGame());
 
+const qrOptions = {
+    minCorrectionLevel: correction.L
+}
+
 // Buttons
-reloadButton.onclick = function(){
+reloadButton.onclick = async function(){
     engine.play(editorToGame());
     if (qrCodeVisible) {
-        generate(gameToUrl(engine.game)).toCanvas(qrCanvas);
+        generate(await gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
     }
 };
-copyButton.onclick = function(){
-    navigator.clipboard.writeText(gameToUrl(engine.game));
+copyButton.onclick = async function(){
+    navigator.clipboard.writeText(await gameToUrl(engine.game));
 };
 let qrCodeVisible = false;
 qrButton.onclick = async function() {
     qrCodeVisible = !qrCodeVisible
     if (qrCodeVisible) {
-        generate(gameToUrl(engine.game)).toCanvas(qrCanvas);
+        generate(await gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
         qrCanvas.style.display = "block"
     } else {
         qrCanvas.style.display = "none"
