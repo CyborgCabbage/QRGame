@@ -21,37 +21,61 @@ function frame()
   f = f + FRAME_TIME
 end`;
 
+// Import/Export
+function urlToGame() {
+    const params = new URLSearchParams(window.location.search);
+    const importedScript = params.get("s");
+    if (importedScript !== null) {
+        return new Game(importedScript);
+    }
+    return null;
+}
+function gameToUrl(game) {
+    return window.location.origin+window.location.pathname+"?s="+encodeURIComponent(game.script);
+}
+
 // Script Editor
-const params = new URLSearchParams(window.location.search);
-const importedScript = params.get("s");
 let scriptInput = new EditorView({
-    doc: importedScript !== null ? importedScript : INITIAL_SCRIPT,
     extensions: [basicSetup, StreamLanguage.define(lua)],
     parent: mainElement
 })
-function createGameFromEditor() {
+function gameToEditor(game) {
+    const transaction = scriptInput.state.update({changes: {
+        from: 0, 
+        to: scriptInput.state.doc.length, 
+        insert: game.script
+    }});
+    scriptInput.update([transaction]);
+}
+function editorToGame() {
     return new Game(scriptInput.state.doc.toString());
 }
 
 // Engine
 const engine = new Engine(gameCanvas);
-engine.play(createGameFromEditor());
+let game = urlToGame();
+if (game === null) {
+    game = new Game(INITIAL_SCRIPT);
+}
+gameToEditor(game);
+// (could load the game directly here but want to make sure the editor works properly)
+engine.play(editorToGame());
 
 // Buttons
 reloadButton.onclick = function(){
-    engine.play(createGameFromEditor());
+    engine.play(editorToGame());
     if (qrCodeVisible) {
-        generate(engine.game.asURL()).toCanvas(qrCanvas);
+        generate(gameToUrl(engine.game)).toCanvas(qrCanvas);
     }
 };
 copyButton.onclick = function(){
-    navigator.clipboard.writeText(engine.game.asURL());
+    navigator.clipboard.writeText(gameToUrl(engine.game));
 };
 let qrCodeVisible = false;
 qrButton.onclick = async function() {
     qrCodeVisible = !qrCodeVisible
     if (qrCodeVisible) {
-        generate(engine.game.asURL()).toCanvas(qrCanvas);
+        generate(gameToUrl(engine.game)).toCanvas(qrCanvas);
         qrCanvas.style.display = "block"
     } else {
         qrCanvas.style.display = "none"

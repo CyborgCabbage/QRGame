@@ -8,9 +8,6 @@ export class Game {
     constructor(script) {
         this.script = script;
     }
-    asURL() {
-        return window.location.origin+window.location.pathname+"?s="+encodeURIComponent(this.script);
-    }
 }
 
 class Sprite {
