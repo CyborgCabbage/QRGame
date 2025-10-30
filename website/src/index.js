@@ -21,32 +21,50 @@ function frame()
   f = f + FRAME_TIME
 end`;
 
+class StreamCompressor {
+    constructor(algorithm) {
+        this.#algorithm = algorithm;
+    }
+    async compress(data) {
+        const stream = new Blob([data]).stream();
+        const compressedStream = stream.pipeThrough(new CompressionStream(algorithm));
+        return await new Response(compressedStream).bytes();
+    }
+    async decompress(data) {
+        const stream = new Blob([data]).stream();
+        const decompressedStream = stream.pipeThrough(new DecompressionStream(algorithm));
+        return await new Response(decompressedStream).bytes();
+    }
+    #algorithm
+}
 
+const compressors = [
+    new StreamCompressor("deflate-raw"),
+    new StreamCompressor("gzip"),
+    new StreamCompressor("deflate"),
+];
 
 // Import/Export
 //Compression Stream: https://evanhahn.com/javascript-compression-streams-api-with-strings/
-async function urlToGame() {
+function urlToData() {
     const params = new URLSearchParams(window.location.search);
     const base64 = params.get("s");
     if (base64 === null) return null;
     const compressed = Uint8Array.fromBase64(base64, { alphabet: "base64url", omitPadding: true });
     if (compressed.length === 0) return null;
-    const stream = new Blob([compressed]).stream();
-    const decompressedStream = stream.pipeThrough(new DecompressionStream("deflate-raw"));
-    const data = await new Response(decompressedStream).bytes();
-    const script = new TextDecoder().decode(data);
-    if (script.length === 0) return null;
-    return new Game(script);
+    return compressed;
 }
-async function gameToUrl(game) {
-    const data = new TextEncoder().encode(game.script);
-    const stream = new Blob([data]).stream();
-    const compressedStream = stream.pipeThrough(new CompressionStream("deflate-raw"));
-    const compressed = await new Response(compressedStream).bytes();
-    const base64 = compressed.toBase64({ alphabet: "base64url", omitPadding: true });
+function dataToUrl(data) {
+    const base64 = data.toBase64({ alphabet: "base64url", omitPadding: true });
     const params = new URLSearchParams();
     params.set("s", base64);
     return window.location.origin+window.location.pathname+"?"+params;
+}
+function urlToGame() {
+    return Game.fromData(urlToData());
+}
+function gameToUrl(game) {
+    return dataToUrl(game.toData());
 }
 
 // Script Editor
@@ -68,7 +86,7 @@ function editorToGame() {
 
 // Engine
 const engine = new Engine(gameCanvas);
-let game = await urlToGame();
+let game = urlToGame();
 if (game === null) {
     game = new Game(INITIAL_SCRIPT);
 }
@@ -84,17 +102,17 @@ const qrOptions = {
 reloadButton.onclick = async function(){
     engine.play(editorToGame());
     if (qrCodeVisible) {
-        generate(await gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
+        generate(gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
     }
 };
 copyButton.onclick = async function(){
-    navigator.clipboard.writeText(await gameToUrl(engine.game));
+    navigator.clipboard.writeText(gameToUrl(engine.game));
 };
 let qrCodeVisible = false;
 qrButton.onclick = async function() {
     qrCodeVisible = !qrCodeVisible
     if (qrCodeVisible) {
-        generate(await gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
+        generate(gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
         qrCanvas.style.display = "block"
     } else {
         qrCanvas.style.display = "none"

@@ -8,6 +8,15 @@ export class Game {
     constructor(script) {
         this.script = script;
     }
+    toData() {
+        return new TextEncoder().encode(this.script);
+    }
+    static fromData(data) {
+        if (data === null) return null;
+        const script = new TextDecoder().decode(data);
+        if (script.length === 0) return null;
+        return new Game(script);
+    }
 }
 
 class Sprite {
