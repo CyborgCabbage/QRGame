@@ -18,7 +18,9 @@
   },
   "dependencies": {
     "@codemirror/legacy-modes": "^6.5.2",
+    "brotli-wasm": "^3.0.1",
     "codemirror": "^6.0.2",
+    "fflate": "^0.8.2",
     "lean-qr": "^2.6.0",
     "wasmoon": "^1.16.0"
   }

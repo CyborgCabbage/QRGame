@@ -4,6 +4,9 @@ import {StreamLanguage} from '@codemirror/language'
 import {lua} from '@codemirror/legacy-modes/mode/lua'
 import {correction, generate} from 'lean-qr'
 import {Engine, Game} from './engine.js'
+import * as fflate from 'fflate'
+import brotliPromise from 'brotli-wasm';
+const brotli = await brotliPromise;
 
 // DOM
 const mainElement = document.querySelector('main');
@@ -21,19 +24,24 @@ function frame()
   f = f + FRAME_TIME
 end`;
 
+const LUA_KEYWORDS = `andbreakdoelseelseifendfalseforfunctionifinlocalnilnotorrepeatreturnthentrueuntilwhile`;
+
 class StreamCompressor {
     constructor(algorithm) {
         this.#algorithm = algorithm;
     }
     async compress(data) {
         const stream = new Blob([data]).stream();
-        const compressedStream = stream.pipeThrough(new CompressionStream(algorithm));
+        const compressedStream = stream.pipeThrough(new CompressionStream(this.#algorithm));
         return await new Response(compressedStream).bytes();
     }
     async decompress(data) {
         const stream = new Blob([data]).stream();
-        const decompressedStream = stream.pipeThrough(new DecompressionStream(algorithm));
+        const decompressedStream = stream.pipeThrough(new DecompressionStream(this.#algorithm));
         return await new Response(decompressedStream).bytes();
+    }
+    toString() {
+        return "web " + this.#algorithm;
     }
     #algorithm
 }
@@ -101,6 +109,26 @@ const qrOptions = {
 // Buttons
 reloadButton.onclick = async function(){
     engine.play(editorToGame());
+    console.log("Compression Results");
+    const gameData = engine.game.toData();
+    const results = {};
+    results["raw"] = gameData.length;
+    for (const c of compressors) {
+        const compressed = await c.compress(gameData);
+        results[c.toString()] = compressed.length;
+    }
+    const fflateOpts = {level: 9, mem: 8};
+    const fflateOptsDict = {level: 9, mem: 8, dictionary: new TextEncoder().encode(LUA_KEYWORDS)};
+    results["fflate gzip"] = fflate.gzipSync(gameData, fflateOpts).length;
+    results["fflate gzip w/dict"] = fflate.gzipSync(gameData, fflateOptsDict).length;
+    results["fflate zip"] = fflate.zipSync(gameData, fflateOpts).length;
+    results["fflate zip w/dict"] = fflate.zipSync(gameData, fflateOptsDict).length;
+    results["fflate zlib"] = fflate.zlibSync(gameData, fflateOpts).length;
+    results["fflate zlib w/dict"] = fflate.zlibSync(gameData, fflateOptsDict).length;
+    results["fflate deflate"] = fflate.deflateSync(gameData, fflateOpts).length;
+    results["fflate deflate w/dict"] = fflate.deflateSync(gameData, fflateOptsDict).length;
+    results["brotli"] = brotli.compress(gameData, {quality: 11}).length;
+    console.table(results);
     if (qrCodeVisible) {
         generate(gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
     }
