@@ -1,41 +1,44 @@
 import png
-import unicodedata
+import unicodedataplus as ud
 unidata = {}
-skipped = 0
+lines = 0
 with open('unifont.hex', 'r') as file:
     for line in file:
+        lines += 1
         code, value = line.strip().split(':')
         index = int(code, 16)
-        if unicodedata.category(chr(index)) == 'Lo':
-            skipped += 1
-            continue
-        rows = []
-        row = 4 if len(value) == 64 else 2
-        for i in range(0, len(value), row):
-            rows.append(format(int(value[i:i+row], 16), "016b"))
-        unidata[index] = rows
-print("Skipped:"+str(skipped))
+        c = chr(index)
+        if ud.is_extended_pictographic(c) or index < 128:
+            unidata[index] = value
+            
+print("Lines:"+str(lines))
+print("Codepoints:"+str(len(unidata)))
 width = 16
 while width**2 < len(unidata):
     width *= 2
 codepoints = list(unidata.keys())
 print("Width:"+str(width))
 
-def create_chars():
-    image = []
-    for y in range(width * 16):
-        row = []
-        for x in range(width * 16):
-            idx = (y // 16 * width) + x // 16
-            value = 0
-            if idx in codepoints:
-                print(codepoints[idx])
-                value = 255 if unidata[codepoints[idx]][y % 16][x % 16] == '1' else 0
-            row.append(value)
-        image.append(row)
-    return image
+atlas = [[0]*(width*16) for y in range(width*16)]
+index = 0
+for code in sorted(unidata):
+    value = unidata[code]
+    ax = index % width
+    ay = index // width
+    fullwidth = (len(value) == 64)
+    for cy in range(16):
+        crow = None
+        if fullwidth:
+            crow = format(int(value[cy*4:cy*4+4], 16), "016b")
+        else:
+            crow = "0000"+format(int(value[cy*2:cy*2+2], 16), "08b")+"0000"
+        for cx in range(16):
+            atlas[ay*16+cy][ax*16+cx] = int(crow[cx])
+    index += 1
 
 # Create and save chars
-writer = png.Writer(width * 16, width * 16, bitdepth=8, greyscale=True)
-with open('chars.png', 'wb') as f:
-    writer.write(f, [[0]*width]*width)
+png.from_array(atlas, 'L;1').save("chars.png")
+
+with open("chars.txt", "w", encoding="utf-8") as f:
+    for code in sorted(unidata):
+        f.write(str(code)+"\n")
