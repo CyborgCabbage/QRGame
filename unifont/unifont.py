@@ -8,7 +8,7 @@ with open('unifont.hex', 'r') as file:
         code, value = line.strip().split(':')
         index = int(code, 16)
         c = chr(index)
-        if ud.is_extended_pictographic(c) or index < 128:
+        if ud.is_extended_pictographic(c) or index < 128 or 'drawing' in ud.block(c).lower():
             unidata[index] = value
             
 print("Lines:"+str(lines))
