@@ -1,8 +1,20 @@
 import {LuaFactory} from 'wasmoon'
 import Chars from './chars.png';
+import CharsText from './chars.txt?raw'
 
 const FRAME_TIME = 1.0 / 60.0
 const FRAME_TIME_MS = FRAME_TIME * 1000.0;
+const CHAR_WIDTH = 16;
+
+const PALETTE = [
+    (0, 0, 1),
+    (0, 1, 0),
+    (0, 1, 1),
+    (1, 0, 0),
+    (1, 0, 1),
+    (1, 1, 0),
+    (1, 1, 1),
+]
 
 export class Game {
     constructor(script) {
@@ -27,7 +39,11 @@ class Sprite {
     }
     draw(engine) {
         engine.ctx.fillStyle = "white";
-        engine.ctx.drawImage(engine.spriteSheet, (this.char % 4) * 16, Math.floor(this.char / 4) * 16, 16, 16, this.x, this.y, 16, 16);
+        var index = engine.spriteIndices[this.char];
+        var spriteSheetWidth = engine.spriteSheet.width / 16;
+        var x = (index % spriteSheetWidth);
+        var y = Math.floor(index / spriteSheetWidth);
+        engine.ctx.drawImage(engine.spriteSheet, x * CHAR_WIDTH, y * CHAR_WIDTH, CHAR_WIDTH, CHAR_WIDTH, this.x, this.y, CHAR_WIDTH, CHAR_WIDTH);
     }
 }
 
@@ -35,6 +51,13 @@ export class Engine {
     constructor(gameCanvas) {
         this.spriteSheet = new Image();
         this.spriteSheet.src = Chars;
+        this.spriteIndices = {};
+        var lines = CharsText.split('\n');
+        for (let i = 0; i < lines.length; i++)
+        {
+            var l = lines[i];
+            this.spriteIndices[parseInt(l)] = i;
+        }
         this.luaFactory = new LuaFactory();
         this.gameCanvas = gameCanvas;
         this.ctx = gameCanvas.getContext('2d');
@@ -49,6 +72,16 @@ export class Engine {
         this.lua.global.set('setSpritePos', (x, y) => {
             this.sprites[0].x = x;
             this.sprites[0].y = y;
+        });
+        this.lua.global.set('setSpriteChar', (s) => {
+            if (typeof s === 'string')
+            {
+                this.sprites[0].char = s.codePointAt(0);
+            }
+            else if (typeof s === 'number')
+            {
+                this.sprites[0].char = s;
+            }
         });
         // Load Script
         this.lua.doStringSync(this.game.script);

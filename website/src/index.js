@@ -18,8 +18,17 @@ const qrCanvas = document.getElementById('qr-canvas');
 
 // Constants
 const INITIAL_SCRIPT = `local f = 0
+
+function utf8.sub(s,i,j)
+    i=utf8.offset(s,i)
+    j=utf8.offset(s,j+1)-1
+    return string.sub(s,i,j)
+end
+
 function frame()
-  local radians = f * math.pi * 2
+  local radians = f * math.pi * 0.5
+  local char = math.floor(f) % 16 + 1
+  setSpriteChar(utf8.sub('🍕🍔🍟🌭🍿🧂🥓🥚🍳🧇🥞🧈🍞🥐🥨🥯', char, char))
   setSpritePos(math.floor(88.5+math.sin(radians)*45), math.floor(120.5+math.cos(radians*1.618)*45))
   f = f + FRAME_TIME
 end`;
