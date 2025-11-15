@@ -17,21 +17,34 @@ const qrButton = document.getElementById('qr-button');
 const qrCanvas = document.getElementById('qr-canvas');
 
 // Constants
-const INITIAL_SCRIPT = `local f = 0
-
-function utf8.sub(s,i,j)
+const INITIAL_SCRIPT = `function utf8.sub(s,i,j)
     i=utf8.offset(s,i)
     j=utf8.offset(s,j+1)-1
     return string.sub(s,i,j)
 end
 
+local sprs = {}
+for i = 1, 16 do
+    local c = utf8.sub('🍕🍔🍟🌭🍿🧂🥓🥚🍳🧇🥞🧈🍞🥐🥨🥯', i, i)
+    sprs[i] = createSprite(c, 0, 0)
+end
+
+local f = 0
 function frame()
-  local radians = f * math.pi * 0.5
-  local char = math.floor(f) % 16 + 1
-  setSpriteChar(utf8.sub('🍕🍔🍟🌭🍿🧂🥓🥚🍳🧇🥞🧈🍞🥐🥨🥯', char, char))
-  setSpritePos(math.floor(88.5+math.sin(radians)*45), math.floor(120.5+math.cos(radians*1.618)*45))
+  for i = 1, 16 do
+    local radians = f * math.pi * 0.5 + (math.pi * 2) * (i / 16)
+    sprs[i].x = math.floor(88.5+math.sin(radians)*45)
+    sprs[i].y = math.floor(120.5+math.cos(radians)*45)
+  end
   f = f + FRAME_TIME
-end`;
+end
+
+local removedIndex = 1
+function tap()
+  destroySprite(sprs[removedIndex])
+  removedIndex = removedIndex + 1
+end
+`;
 
 const LUA_KEYWORDS = `andbreakdoelseelseifendfalseforfunctionifinlocalnilnotorrepeatreturnthentrueuntilwhile`;
 

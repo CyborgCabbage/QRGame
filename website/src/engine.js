@@ -39,7 +39,7 @@ class Sprite {
     }
     draw(engine) {
         engine.ctx.fillStyle = "white";
-        var index = engine.spriteIndices[this.char];
+        var index = engine.spriteIndices[this.char.codePointAt(0)];
         var spriteSheetWidth = engine.spriteSheet.width / 16;
         var x = (index % spriteSheetWidth);
         var y = Math.floor(index / spriteSheetWidth);
@@ -61,32 +61,33 @@ export class Engine {
         this.luaFactory = new LuaFactory();
         this.gameCanvas = gameCanvas;
         this.ctx = gameCanvas.getContext('2d');
+        gameCanvas.addEventListener('pointerdown', (event) => {
+            if (this.luaTap)
+            {
+                this.luaTap();
+            }
+        });
     }
     async play(game) {
         // Setup (should override any existing values)
         this.game = game;
-        this.sprites = [new Sprite(0, 0, 16)];
+        this.sprites = [];
         // Setup Lua Environment
         this.lua = await this.luaFactory.createEngine()
         this.lua.global.set('FRAME_TIME', FRAME_TIME);
-        this.lua.global.set('setSpritePos', (x, y) => {
-            this.sprites[0].x = x;
-            this.sprites[0].y = y;
+        this.lua.global.set('createSprite', (char, x, y) => {
+            var newSprite = new Sprite(char, x, y);
+            this.sprites.push(newSprite);
+            return newSprite;
         });
-        this.lua.global.set('setSpriteChar', (s) => {
-            if (typeof s === 'string')
-            {
-                this.sprites[0].char = s.codePointAt(0);
-            }
-            else if (typeof s === 'number')
-            {
-                this.sprites[0].char = s;
-            }
+        this.lua.global.set('destroySprite', (sprite) => {
+            this.sprites = this.sprites.filter(s => s !== sprite);
         });
         // Load Script
         this.lua.doStringSync(this.game.script);
         // Get Lua References
         this.luaFrame = this.lua.global.get('frame');
+        this.luaTap = this.lua.global.get('tap');
         // Start
         requestAnimationFrame(this.#mainLoop.bind(this));
     }
