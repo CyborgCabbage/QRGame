@@ -6,14 +6,24 @@ const FRAME_TIME = 1.0 / 60.0
 const FRAME_TIME_MS = FRAME_TIME * 1000.0;
 const CHAR_WIDTH = 16;
 
+// https://lospec.com/palette-list/shmupy-16
 const PALETTE = [
-    (0, 0, 1),
-    (0, 1, 0),
-    (0, 1, 1),
-    (1, 0, 0),
-    (1, 0, 1),
-    (1, 1, 0),
-    (1, 1, 1),
+    '#101020',
+    '#222244',
+    '#334455',
+    '#556666',
+    '#664455',
+    '#887766',
+    '#999988',
+    '#ccccaa',
+    '#ffffee',
+    '#cc5544',
+    '#ff8822',
+    '#ffcc33',
+    '#88cc44',
+    '#449944',
+    '#44aaff',
+    '#3377dd',
 ]
 
 export class Game {
@@ -32,23 +42,34 @@ export class Game {
 }
 
 class Sprite {
-    constructor(char, x, y) {
+    constructor(char, color, x, y) {
         this.char = char;
+        this.color = color;
         this.x = x;
         this.y = y;
     }
     draw(engine) {
         engine.ctx.fillStyle = "white";
         var index = engine.spriteIndices[this.char.codePointAt(0)];
-        var spriteSheetWidth = engine.spriteSheet.width / 16;
+        var spriteSheetWidth = engine.spriteSheet.width / CHAR_WIDTH;
         var x = (index % spriteSheetWidth);
         var y = Math.floor(index / spriteSheetWidth);
-        engine.ctx.drawImage(engine.spriteSheet, x * CHAR_WIDTH, y * CHAR_WIDTH, CHAR_WIDTH, CHAR_WIDTH, this.x, this.y, CHAR_WIDTH, CHAR_WIDTH);
+        // https://stackoverflow.com/a/4231508
+        engine.dbctx.fillStyle = PALETTE[this.color];
+        engine.dbctx.globalCompositeOperation = "source-over";
+        engine.dbctx.fillRect(0, 0, engine.drawBuffer.width, engine.drawBuffer.height);
+        engine.dbctx.globalCompositeOperation = "destination-atop";
+        engine.dbctx.drawImage(engine.spriteSheet, x * CHAR_WIDTH, y * CHAR_WIDTH, CHAR_WIDTH, CHAR_WIDTH, 0, 0, CHAR_WIDTH, CHAR_WIDTH);
+        engine.ctx.drawImage(engine.drawBuffer, this.x, this.y);
     }
 }
 
 export class Engine {
     constructor(gameCanvas) {
+        this.drawBuffer = document.createElement('canvas');
+        this.drawBuffer.width = CHAR_WIDTH;
+        this.drawBuffer.height = CHAR_WIDTH;
+        this.dbctx = this.drawBuffer.getContext('2d');
         this.spriteSheet = new Image();
         this.spriteSheet.src = Chars;
         this.spriteIndices = {};
@@ -75,8 +96,8 @@ export class Engine {
         // Setup Lua Environment
         this.lua = await this.luaFactory.createEngine()
         this.lua.global.set('FRAME_TIME', FRAME_TIME);
-        this.lua.global.set('createSprite', (char, x, y) => {
-            var newSprite = new Sprite(char, x, y);
+        this.lua.global.set('createSprite', (char, color, x, y) => {
+            var newSprite = new Sprite(char, color, x, y);
             this.sprites.push(newSprite);
             return newSprite;
         });
@@ -97,7 +118,10 @@ export class Engine {
         }
         const elapsed = timestamp - this.#previousTimestamp;
         if (elapsed > FRAME_TIME_MS) {
-            this.luaFrame();
+            if (this.luaFrame)
+            {
+                this.luaFrame();
+            }
             this.ctx.beginPath();
             // Fill Background
             this.ctx.fillStyle = "black";

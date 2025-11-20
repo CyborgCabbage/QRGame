@@ -19,7 +19,7 @@ while width**2 < len(unidata):
 codepoints = list(unidata.keys())
 print("Width:"+str(width))
 
-atlas = [[0]*(width*16) for y in range(width*16)]
+atlas = [[0]*(width*16*2) for y in range(width*16)]
 index = 0
 for code in sorted(unidata):
     value = unidata[code]
@@ -33,11 +33,12 @@ for code in sorted(unidata):
         else:
             crow = "0000"+format(int(value[cy*2:cy*2+2], 16), "08b")+"0000"
         for cx in range(16):
-            atlas[ay*16+cy][ax*16+cx] = int(crow[cx])
+            atlas[ay*16+cy][(ax*16+cx)*2] = 1 #Luminance
+            atlas[ay*16+cy][(ax*16+cx)*2+1] = int(crow[cx]) #Alpha
     index += 1
 
 # Create and save chars
-png.from_array(atlas, 'L;1').save("chars.png")
+png.from_array(atlas, 'LA;1').save("chars.png")
 
 with open("chars.txt", "w", encoding="utf-8") as f:
     for code in sorted(unidata):

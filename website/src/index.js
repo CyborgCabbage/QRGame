@@ -26,7 +26,7 @@ end
 local sprs = {}
 for i = 1, 16 do
     local c = utf8.sub('🍕🍔🍟🌭🍿🧂🥓🥚🍳🧇🥞🧈🍞🥐🥨🥯', i, i)
-    sprs[i] = createSprite(c, 0, 0)
+    sprs[i] = createSprite(c, math.random(8, 15), 0, 0)
 end
 
 local f = 0
