@@ -1,0 +1,4 @@
+[submodule "picotool"]
+	path = picotool
+	url = https://github.com/dansanderson/picotool
+	ignore = all
