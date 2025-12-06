@@ -21,11 +21,13 @@ print("Width:"+str(width))
 
 atlas = [[0]*(width*16*2) for y in range(width*16)]
 index = 0
+unidata_width = {}
 for code in sorted(unidata):
     value = unidata[code]
     ax = index % width
     ay = index // width
     fullwidth = (len(value) == 64)
+    unidata_width[code] = fullwidth
     for cy in range(16):
         crow = None
         if fullwidth:
@@ -42,4 +44,4 @@ png.from_array(atlas, 'LA;1').save("chars.png")
 
 with open("chars.txt", "w", encoding="utf-8") as f:
     for code in sorted(unidata):
-        f.write(str(code)+"\n")
+        f.write(str(code)+","+str(int(unidata_width[code]))+"\n")

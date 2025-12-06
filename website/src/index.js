@@ -26,8 +26,12 @@ end
 local sprs = {}
 for i = 1, 16 do
     local c = utf8.sub('🍕🍔🍟🌭🍿🧂🥓🥚🍳🧇🥞🧈🍞🥐🥨🥯', i, i)
-    sprs[i] = createSprite(c, math.random(8, 15), 0, 0)
+    sprs[i] = createSprite(c, i-1, 0, 0)
 end
+
+local text = createSprite('🍕araf🍔q5r32🍟3s r🌭32🍿qdf🧂4q🥓f🥚435🍳46tr🧇45g🥞64tg🧈45eg🍞df🥐23f🥨d🥯', 8, 0, 0)
+text.wrap = 12
+text.compact = true
 
 local f = 0
 function frame()
@@ -43,8 +47,7 @@ local removedIndex = 1
 function tap()
   destroySprite(sprs[removedIndex])
   removedIndex = removedIndex + 1
-end
-`;
+end`;
 
 const LUA_KEYWORDS = `andbreakdoelseelseifendfalseforfunctionifinlocalnilnotorrepeatreturnthentrueuntilwhile`;
 

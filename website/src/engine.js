@@ -47,20 +47,44 @@ class Sprite {
         this.color = color;
         this.x = x;
         this.y = y;
+        this.wrap = 0;
+        this.compact = false;
     }
     draw(engine) {
         engine.ctx.fillStyle = "white";
-        var index = engine.spriteIndices[this.char.codePointAt(0)];
-        var spriteSheetWidth = engine.spriteSheet.width / CHAR_WIDTH;
-        var x = (index % spriteSheetWidth);
-        var y = Math.floor(index / spriteSheetWidth);
-        // https://stackoverflow.com/a/4231508
-        engine.dbctx.fillStyle = PALETTE[this.color];
-        engine.dbctx.globalCompositeOperation = "source-over";
-        engine.dbctx.fillRect(0, 0, engine.drawBuffer.width, engine.drawBuffer.height);
-        engine.dbctx.globalCompositeOperation = "destination-atop";
-        engine.dbctx.drawImage(engine.spriteSheet, x * CHAR_WIDTH, y * CHAR_WIDTH, CHAR_WIDTH, CHAR_WIDTH, 0, 0, CHAR_WIDTH, CHAR_WIDTH);
-        engine.ctx.drawImage(engine.drawBuffer, this.x, this.y);
+        const array = Array.from(this.char);
+        let offsetX = 0;
+        let offsetY = 0;
+        for (let i = 0; i < array.length; i++) {
+            const codepoint = array[i].codePointAt(0);
+            const data = engine.spriteSheetData[codepoint];
+            const spriteSheetWidth = engine.spriteSheet.width / CHAR_WIDTH;
+            const x = (data.index % spriteSheetWidth);
+            const y = Math.floor(data.index / spriteSheetWidth);
+            const isFullWidth = !this.compact || data.isFullWidth;
+            const width = isFullWidth ? CHAR_WIDTH : CHAR_WIDTH / 2;
+            if (this.wrap > 0 && offsetX + width > this.wrap * CHAR_WIDTH)
+            {
+                offsetX = 0;
+                offsetY += CHAR_WIDTH;
+            }
+            // https://stackoverflow.com/a/4231508
+            engine.dbctx.fillStyle = PALETTE[this.color];
+            engine.dbctx.globalCompositeOperation = "source-over";
+            engine.dbctx.fillRect(0, 0, engine.drawBuffer.width, engine.drawBuffer.height);
+            engine.dbctx.globalCompositeOperation = "destination-atop";
+            if (isFullWidth)
+            {
+                engine.dbctx.drawImage(engine.spriteSheet, x * CHAR_WIDTH, y * CHAR_WIDTH, CHAR_WIDTH, CHAR_WIDTH, 0, 0, CHAR_WIDTH, CHAR_WIDTH);
+            }
+            else
+            {
+                engine.dbctx.drawImage(engine.spriteSheet, x * CHAR_WIDTH + CHAR_WIDTH / 4, y * CHAR_WIDTH, CHAR_WIDTH / 2, CHAR_WIDTH, 0, 0, CHAR_WIDTH / 2, CHAR_WIDTH);
+            }
+            engine.ctx.drawImage(engine.drawBuffer, this.x + offsetX, this.y + offsetY);
+            // Update offset
+            offsetX += width
+        }
     }
 }
 
@@ -72,12 +96,15 @@ export class Engine {
         this.dbctx = this.drawBuffer.getContext('2d');
         this.spriteSheet = new Image();
         this.spriteSheet.src = Chars;
-        this.spriteIndices = {};
-        var lines = CharsText.split('\n');
+        this.spriteSheetData = {};
+        let lines = CharsText.split('\n');
         for (let i = 0; i < lines.length; i++)
         {
-            var l = lines[i];
-            this.spriteIndices[parseInt(l)] = i;
+            let l = lines[i].split(',');
+            this.spriteSheetData[parseInt(l[0])] = {
+                index: i,
+                isFullWidth: l[1] > 0
+            }
         }
         this.luaFactory = new LuaFactory();
         this.gameCanvas = gameCanvas;
@@ -97,7 +124,7 @@ export class Engine {
         this.lua = await this.luaFactory.createEngine()
         this.lua.global.set('FRAME_TIME', FRAME_TIME);
         this.lua.global.set('createSprite', (char, color, x, y) => {
-            var newSprite = new Sprite(char, color, x, y);
+            let newSprite = new Sprite(char, color, x, y);
             this.sprites.push(newSprite);
             return newSprite;
         });
@@ -118,10 +145,12 @@ export class Engine {
         }
         const elapsed = timestamp - this.#previousTimestamp;
         if (elapsed > FRAME_TIME_MS) {
+            // Frame
             if (this.luaFrame)
             {
                 this.luaFrame();
             }
+            // Rendering
             this.ctx.beginPath();
             // Fill Background
             this.ctx.fillStyle = "black";
