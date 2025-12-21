@@ -41,12 +41,6 @@ function frame()
     sprs[i].y = math.floor(120.5+math.cos(radians)*45)
   end
   f = f + FRAME_TIME
-end
-
-local removedIndex = 1
-function tap()
-  destroySprite(sprs[removedIndex])
-  removedIndex = removedIndex + 1
 end`;
 
 const LUA_KEYWORDS = `andbreakdoelseelseifendfalseforfunctionifinlocalnilnotorrepeatreturnthentrueuntilwhile`;

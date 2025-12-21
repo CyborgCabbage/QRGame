@@ -1,7 +1,7 @@
 {
   "name": "qrgame",
   "version": "1.0.0",
-   "repository": {
+  "repository": {
     "url": "git+https://github.com/CyborgCabbage/QRGame.git"
   },
   "private": true,
@@ -15,8 +15,8 @@
   "description": "",
   "devDependencies": {
     "css-loader": "^7.1.2",
-    "html-webpack-plugin": "^5.6.4",
     "gh-pages": "^6.3.0",
+    "html-webpack-plugin": "^5.6.4",
     "style-loader": "^4.0.0",
     "webpack": "^5.102.1",
     "webpack-cli": "^6.0.1",
@@ -28,6 +28,7 @@
     "codemirror": "^6.0.2",
     "fflate": "^0.8.2",
     "lean-qr": "^2.6.0",
+    "matter-js": "^0.20.0",
     "wasmoon": "^1.16.0"
   }
 }

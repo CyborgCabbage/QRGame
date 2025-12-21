@@ -1,6 +1,7 @@
 import {LuaFactory} from 'wasmoon'
 import Chars from './chars.png';
 import CharsText from './chars.txt?raw'
+import Matter from 'matter-js'
 
 const FRAME_TIME = 1.0 / 60.0
 const FRAME_TIME_MS = FRAME_TIME * 1000.0;
@@ -41,20 +42,53 @@ export class Game {
     }
 }
 
+const SpriteDrag = {
+    DISABLED: "disabled",
+    TELEPORT: "teleport",
+    VELOCITY: "velocity"
+};
+
 class Sprite {
+    #x;
+    #y;
     constructor(char, color, x, y) {
         this.char = char;
         this.color = color;
-        this.x = x;
-        this.y = y;
+        this.#x = x;
+        this.#y = y;
         this.wrap = 0;
-        this.compact = false;
+        this.compact = true;
+        this.body = Matter.Bodies.rectangle(this.#x, this.#y, CHAR_WIDTH, CHAR_WIDTH);
+        this.body.isSensor = true;
+        this.drag = SpriteDrag.DISABLED;
+    }
+    set x(value) {
+        this.#x = value;
+        Matter.Body.setPosition(this.body, {x: this.#x, y: this.#y});
+        Matter.Body.setVelocity(this.body, {x: 0, y: 0})
+    }
+    get x() {
+        return this.#x;
+    }
+    set y(value) {
+        this.#y = value;
+        Matter.Body.setPosition(this.body, {x: this.#x, y: this.#y});
+        Matter.Body.setVelocity(this.body, {x: 0, y: 0})
+    }
+    get y() {
+        return this.#y;
+    }
+    postPhysicsUpdate() {
+        this.#x = this.body.position.x;
+        this.#y = this.body.position.y;
     }
     draw(engine) {
         engine.ctx.fillStyle = "white";
         const array = Array.from(this.char);
         let offsetX = 0;
         let offsetY = 0;
+        let roundedX = Math.round(this.#x);
+        let roundedY = Math.round(this.#y);
         for (let i = 0; i < array.length; i++) {
             const codepoint = array[i].codePointAt(0);
             const data = engine.spriteSheetData[codepoint];
@@ -81,7 +115,7 @@ class Sprite {
             {
                 engine.dbctx.drawImage(engine.spriteSheet, x * CHAR_WIDTH + CHAR_WIDTH / 4, y * CHAR_WIDTH, CHAR_WIDTH / 2, CHAR_WIDTH, 0, 0, CHAR_WIDTH / 2, CHAR_WIDTH);
             }
-            engine.ctx.drawImage(engine.drawBuffer, this.x + offsetX, this.y + offsetY);
+            engine.ctx.drawImage(engine.drawBuffer, roundedX + offsetX, roundedY + offsetY);
             // Update offset
             offsetX += width
         }
@@ -106,8 +140,15 @@ export class Engine {
                 isFullWidth: l[1] > 0
             }
         }
-        this.luaFactory = new LuaFactory();
         this.gameCanvas = gameCanvas;
+        this.luaFactory = new LuaFactory();
+        this.matterEngine = Matter.Engine.create({});
+        this.matterEngine.gravity.scale = 0;
+        this.mouseConstraint = Matter.MouseConstraint.create(this.matterEngine, {
+                element: this.gameCanvas,
+            });
+        console.log(this.mouseConstraint);
+        Matter.Composite.add(this.matterEngine.world, this.mouseConstraint);
         this.ctx = gameCanvas.getContext('2d');
         gameCanvas.addEventListener('pointerdown', (event) => {
             if (this.luaTap)
@@ -125,6 +166,7 @@ export class Engine {
         this.lua.global.set('FRAME_TIME', FRAME_TIME);
         this.lua.global.set('createSprite', (char, color, x, y) => {
             let newSprite = new Sprite(char, color, x, y);
+            Matter.Composite.add(this.matterEngine.world, newSprite.body);
             this.sprites.push(newSprite);
             return newSprite;
         });
@@ -149,6 +191,11 @@ export class Engine {
             if (this.luaFrame)
             {
                 this.luaFrame();
+            }
+            // Physics
+            Matter.Engine.update(this.matterEngine, FRAME_TIME_MS);
+            for (let sprite of this.sprites) {
+                sprite.postPhysicsUpdate(this)
             }
             // Rendering
             this.ctx.beginPath();
