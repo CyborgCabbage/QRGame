@@ -2,6 +2,7 @@ import {LuaFactory} from 'wasmoon'
 import Chars from './chars.png';
 import CharsText from './chars.txt?raw'
 import Matter from 'matter-js'
+import { SpriteDragConstraint } from './spriteDragConstraint.js'
 
 const FRAME_TIME = 1.0 / 60.0
 const FRAME_TIME_MS = FRAME_TIME * 1000.0;
@@ -42,53 +43,78 @@ export class Game {
     }
 }
 
-const SpriteDrag = {
-    DISABLED: "disabled",
-    TELEPORT: "teleport",
-    VELOCITY: "velocity"
-};
-
 class Sprite {
     #x;
     #y;
+    #px;
+    #py;
+    #drag;
     constructor(char, color, x, y) {
         this.char = char;
         this.color = color;
         this.#x = x;
         this.#y = y;
+        this.#px = 0.0;
+        this.#py = 0.0;
         this.wrap = 0;
         this.compact = true;
-        this.body = Matter.Bodies.rectangle(this.#x, this.#y, CHAR_WIDTH, CHAR_WIDTH);
+        this.body = Matter.Bodies.rectangle(this.#getBodyX(), this.#getBodyY(), CHAR_WIDTH, CHAR_WIDTH);
         this.body.isSensor = true;
-        this.drag = SpriteDrag.DISABLED;
+        this.drag = false;
+       
+    }
+    #getBodyX() {
+        return this.#x - CHAR_WIDTH * this.#px + CHAR_WIDTH * 0.5;
+    }
+    #getBodyY() {
+        return this.#y - CHAR_WIDTH * this.#py + CHAR_WIDTH * 0.5;
+    }
+    #getSpriteX() {
+        return this.#x - CHAR_WIDTH * this.#px;
+    }
+    #getSpriteY() {
+        return this.#y - CHAR_WIDTH * this.#py;
+    }
+    #getEntityXFromBody() {
+        return this.body.position.x + CHAR_WIDTH * this.#px - CHAR_WIDTH * 0.5;
+    }
+    #getEntityYFromBody() {
+        return this.body.position.y + CHAR_WIDTH * this.#py - CHAR_WIDTH * 0.5;
     }
     set x(value) {
         this.#x = value;
-        Matter.Body.setPosition(this.body, {x: this.#x, y: this.#y});
-        Matter.Body.setVelocity(this.body, {x: 0, y: 0})
+        Matter.Body.setPosition(this.body, {x: this.#getBodyX(), y: this.#getBodyY()});
+        //Matter.Body.setVelocity(this.body, {x: 0, y: 0})
     }
     get x() {
         return this.#x;
     }
     set y(value) {
         this.#y = value;
-        Matter.Body.setPosition(this.body, {x: this.#x, y: this.#y});
-        Matter.Body.setVelocity(this.body, {x: 0, y: 0})
+        Matter.Body.setPosition(this.body, {x: this.#getBodyX(), y: this.#getBodyY()});
+        //Matter.Body.setVelocity(this.body, {x: 0, y: 0})
     }
     get y() {
         return this.#y;
     }
+    set drag(value) {
+        this.#drag = value;
+        this.body.plugin.drag = value;
+    }
+    get drag() {
+        return this.#drag;
+    }
     postPhysicsUpdate() {
-        this.#x = this.body.position.x;
-        this.#y = this.body.position.y;
+        this.#x = this.#getEntityXFromBody();
+        this.#y = this.#getEntityYFromBody();
     }
     draw(engine) {
         engine.ctx.fillStyle = "white";
         const array = Array.from(this.char);
         let offsetX = 0;
         let offsetY = 0;
-        let roundedX = Math.round(this.#x);
-        let roundedY = Math.round(this.#y);
+        let roundedX = Math.round(this.#getSpriteX());
+        let roundedY = Math.round(this.#getSpriteY());
         for (let i = 0; i < array.length; i++) {
             const codepoint = array[i].codePointAt(0);
             const data = engine.spriteSheetData[codepoint];
@@ -144,11 +170,8 @@ export class Engine {
         this.luaFactory = new LuaFactory();
         this.matterEngine = Matter.Engine.create({});
         this.matterEngine.gravity.scale = 0;
-        this.mouseConstraint = Matter.MouseConstraint.create(this.matterEngine, {
-                element: this.gameCanvas,
-            });
-        console.log(this.mouseConstraint);
-        Matter.Composite.add(this.matterEngine.world, this.mouseConstraint);
+        this.spriteDragConstraint = SpriteDragConstraint.create(this.matterEngine, this.gameCanvas);
+        Matter.Composite.add(this.matterEngine.world, this.spriteDragConstraint.constraint);
         this.ctx = gameCanvas.getContext('2d');
         gameCanvas.addEventListener('pointerdown', (event) => {
             if (this.luaTap)

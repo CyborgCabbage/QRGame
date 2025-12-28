@@ -1,6 +1,6 @@
 import Matter from 'matter-js'
 
-var SpriteDragConstraint = {};
+export var SpriteDragConstraint = {};
 
 SpriteDragConstraint.create = function(engine, canvas) {
     var mouse = Matter.Mouse.create(canvas);
@@ -17,10 +17,10 @@ SpriteDragConstraint.create = function(engine, canvas) {
         }
     });
 
-    var defaults = {
+    var spriteDragConstraint  = {
         type: 'spriteDragConstraint',
         mouse: mouse,
-        element: null,
+        element: canvas,
         body: null,
         constraint: constraint,
         collisionFilter: {
@@ -30,9 +30,7 @@ SpriteDragConstraint.create = function(engine, canvas) {
         }
     };
 
-    var spriteDragConstraint = Matter.Common.extend(defaults, options);
-
-    Events.on(engine, 'beforeUpdate', function() {
+    Matter.Events.on(engine, 'beforeUpdate', function() {
         var allBodies = Matter.Composite.allBodies(engine.world);
         SpriteDragConstraint.update(spriteDragConstraint, allBodies);
         SpriteDragConstraint._triggerEvents(spriteDragConstraint);
@@ -45,30 +43,31 @@ SpriteDragConstraint.create = function(engine, canvas) {
  * Updates the given mouse constraint.
  * @private
  * @method update
- * @param {MouseConstraint} mouseConstraint
+ * @param {SpriteDragConstraint} spriteDragConstraint
  * @param {body[]} bodies
  */
-SpriteDragConstraint.update = function(mouseConstraint, bodies) {
-    var mouse = mouseConstraint.mouse,
-        constraint = mouseConstraint.constraint,
-        body = mouseConstraint.body;
-
+SpriteDragConstraint.update = function(spriteDragConstraint, bodies) {
+    var mouse = spriteDragConstraint.mouse,
+        constraint = spriteDragConstraint.constraint,
+        body = spriteDragConstraint.body;
     if (mouse.button === 0) {
         if (!constraint.bodyB) {
             for (var i = 0; i < bodies.length; i++) {
                 body = bodies[i];
-                if (Bounds.contains(body.bounds, mouse.position) 
-                        && Detector.canCollide(body.collisionFilter, mouseConstraint.collisionFilter)) {
+                if (body.plugin.drag 
+                        && Matter.Bounds.contains(body.bounds, mouse.position) 
+                        && Matter.Detector.canCollide(body.collisionFilter, spriteDragConstraint.collisionFilter)) {
+                    
                     for (var j = body.parts.length > 1 ? 1 : 0; j < body.parts.length; j++) {
                         var part = body.parts[j];
-                        if (Vertices.contains(part.vertices, mouse.position)) {
+                        if (Matter.Vertices.contains(part.vertices, mouse.position)) {
                             constraint.pointA = mouse.position;
-                            constraint.bodyB = mouseConstraint.body = body;
+                            constraint.bodyB = spriteDragConstraint.body = body;
                             constraint.pointB = { x: mouse.position.x - body.position.x, y: mouse.position.y - body.position.y };
                             constraint.angleB = body.angle;
-
-                            Sleeping.set(body, false);
-                            Events.trigger(mouseConstraint, 'startdrag', { mouse: mouse, body: body });
+                            
+                            Matter.Sleeping.set(body, false);
+                            Matter.Events.trigger(spriteDragConstraint, 'startdrag', { mouse: mouse, body: body });
 
                             break;
                         }
@@ -76,15 +75,15 @@ SpriteDragConstraint.update = function(mouseConstraint, bodies) {
                 }
             }
         } else {
-            Sleeping.set(constraint.bodyB, false);
+            Matter.Sleeping.set(constraint.bodyB, false);
             constraint.pointA = mouse.position;
         }
     } else {
-        constraint.bodyB = mouseConstraint.body = null;
+        constraint.bodyB = spriteDragConstraint.body = null;
         constraint.pointB = null;
 
         if (body)
-            Events.trigger(mouseConstraint, 'enddrag', { mouse: mouse, body: body });
+            Matter.Events.trigger(spriteDragConstraint, 'enddrag', { mouse: mouse, body: body });
     }
 };
 
@@ -92,21 +91,21 @@ SpriteDragConstraint.update = function(mouseConstraint, bodies) {
  * Triggers mouse constraint events.
  * @method _triggerEvents
  * @private
- * @param {mouse} mouseConstraint
+ * @param {mouse} spriteDragConstraint
  */
-SpriteDragConstraint._triggerEvents = function(mouseConstraint) {
-    var mouse = mouseConstraint.mouse,
+SpriteDragConstraint._triggerEvents = function(spriteDragConstraint) {
+    var mouse = spriteDragConstraint.mouse,
         mouseEvents = mouse.sourceEvents;
 
     if (mouseEvents.mousemove)
-        Events.trigger(mouseConstraint, 'mousemove', { mouse: mouse });
+        Matter.Events.trigger(spriteDragConstraint, 'mousemove', { mouse: mouse });
 
     if (mouseEvents.mousedown)
-        Events.trigger(mouseConstraint, 'mousedown', { mouse: mouse });
+        Matter.Events.trigger(spriteDragConstraint, 'mousedown', { mouse: mouse });
 
     if (mouseEvents.mouseup)
-        Events.trigger(mouseConstraint, 'mouseup', { mouse: mouse });
+        Matter.Events.trigger(spriteDragConstraint, 'mouseup', { mouse: mouse });
 
     // reset the mouse state ready for the next step
-    Mouse.clearSourceEvents(mouse);
+    Matter.Mouse.clearSourceEvents(mouse);
 };
