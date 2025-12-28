@@ -9,8 +9,10 @@ import brotliPromise from 'brotli-wasm';
 const brotli = await brotliPromise;
 
 // DOM
-const mainElement = document.querySelector('main');
-const gameCanvas = document.querySelector('canvas');
+
+const gameCanvas = document.getElementById('game-canvas');
+const editorCanvas = document.getElementById('editor-canvas');
+const codeContent = document.getElementById('tab-content-code');
 const reloadButton = document.getElementById('reload-button');
 const copyButton = document.getElementById('copy-button');
 const qrButton = document.getElementById('qr-button');
@@ -97,7 +99,7 @@ function gameToUrl(game) {
 // Script Editor
 let scriptInput = new EditorView({
     extensions: [basicSetup, StreamLanguage.define(lua)],
-    parent: mainElement
+    parent: codeContent
 })
 function gameToEditor(game) {
     const transaction = scriptInput.state.update({changes: {

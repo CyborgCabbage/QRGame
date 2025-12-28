@@ -61,7 +61,6 @@ class Sprite {
         this.body = Matter.Bodies.rectangle(this.#getBodyX(), this.#getBodyY(), CHAR_WIDTH, CHAR_WIDTH);
         this.body.isSensor = true;
         this.drag = false;
-       
     }
     #getBodyX() {
         return this.#x - CHAR_WIDTH * this.#px + CHAR_WIDTH * 0.5;

@@ -7,14 +7,36 @@
     <title>Honours Project</title>
   </head>
   <body>
-    <canvas id="game-canvas" width="192" height="256"></canvas>
-    <main>
-      <p>
-        <button id="reload-button">Reload Game</button>
-        <button id="copy-button">Copy Script as URL</button>
-        <button id="qr-button">Toggle QR code</button>
-      </p>
-      <canvas id="qr-canvas"></canvas>
-    </main>
+    <!-- https://dev.to/joxx/building-a-tab-component-with-pure-css-using-radio-and-label-tags-200b -->
+    <div class="tabs">
+      <!-- Radio Buttons -->
+      <input type="radio" name="tab" id="tab-play">
+      <label for="tab-play">Play</label>
+
+      <input type="radio" name="tab" id="tab-edit">
+      <label for="tab-edit">Edit</label>
+
+      <input type="radio" name="tab" id="tab-code">
+      <label for="tab-code">Code</label>
+
+      <!-- Tab Content -->
+      <div class="tab-content" id="tab-content-play">
+          <canvas id="game-canvas" width="192" height="256"></canvas>
+      </div>
+
+      <div class="tab-content" id="tab-content-edit">
+          <canvas id="editor-canvas" width="192" height="256"></canvas>
+      </div>
+
+      <div class="tab-content" id="tab-content-code">
+          <!-- Code editor will be inserted here from JS -->
+      </div>
+    </div>
+    <p>
+      <button id="reload-button">Reload Game</button>
+      <button id="copy-button">Copy Script as URL</button>
+      <button id="qr-button">Toggle QR code</button>
+    </p>
+    <canvas id="qr-canvas"></canvas>
   </body>
 </html>

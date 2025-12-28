@@ -36,3 +36,19 @@ canvas {
     display: none;
     background: white;
 }
+
+.tabs .tab-content {
+	display: none;
+}
+
+.tabs input[id="tab-play"]:checked ~ #tab-content-play {
+	display: block;
+}
+
+.tabs input[id="tab-edit"]:checked ~ #tab-content-edit {
+	display: block;
+}
+
+.tabs input[id="tab-code"]:checked ~ #tab-content-code {
+	display: block;
+}
