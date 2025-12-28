@@ -2,7 +2,7 @@ import './style.css';
 import {EditorView, basicSetup} from 'codemirror'
 import {StreamLanguage} from '@codemirror/language'
 import {lua} from '@codemirror/legacy-modes/mode/lua'
-import {correction, generate} from 'lean-qr'
+import {correction, generate, ImageDataOptions} from 'lean-qr'
 import {Engine, Game} from './engine.js'
 import * as fflate from 'fflate'
 import brotliPromise from 'brotli-wasm';
@@ -14,7 +14,7 @@ const gameCanvas = document.getElementById('game-canvas');
 const editorCanvas = document.getElementById('editor-canvas');
 const codeContent = document.getElementById('tab-content-code');
 const reloadButton = document.getElementById('reload-button');
-const copyButton = document.getElementById('copy-button');
+const urlButton = document.getElementById('url-button');
 const qrButton = document.getElementById('qr-button');
 const qrCanvas = document.getElementById('qr-canvas');
 
@@ -122,14 +122,19 @@ if (game === null) {
 gameToEditor(game);
 // (could load the game directly here but want to make sure the editor works properly)
 engine.play(editorToGame());
-
-const qrOptions = {
+const qrGenerateOptions = {
     minCorrectionLevel: correction.L
 }
+const qrImageOptions = {
+    on: [0, 0, 0, 255],
+    off: [255, 255, 255, 255]
+}
+generate(gameToUrl(engine.game), qrGenerateOptions).toCanvas(qrCanvas, qrImageOptions);
 
 // Buttons
 reloadButton.onclick = async function(){
     engine.play(editorToGame());
+    generate(gameToUrl(engine.game), qrGenerateOptions).toCanvas(qrCanvas, qrImageOptions);
     console.log("Compression Results");
     const gameData = engine.game.toData();
     const results = {};
@@ -150,20 +155,13 @@ reloadButton.onclick = async function(){
     results["fflate deflate w/dict"] = fflate.deflateSync(gameData, fflateOptsDict).length;
     results["brotli"] = brotli.compress(gameData, {quality: 11}).length;
     console.table(results);
-    if (qrCodeVisible) {
-        generate(gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
-    }
 };
-copyButton.onclick = async function(){
+urlButton.onclick = async function(){
     navigator.clipboard.writeText(gameToUrl(engine.game));
 };
-let qrCodeVisible = false;
-qrButton.onclick = async function() {
-    qrCodeVisible = !qrCodeVisible
-    if (qrCodeVisible) {
-        generate(gameToUrl(engine.game), qrOptions).toCanvas(qrCanvas);
-        qrCanvas.style.display = "block"
-    } else {
-        qrCanvas.style.display = "none"
-    }
+qrButton.onclick = async function(){
+    qrCanvas.toBlob(function(blob) { 
+        const item = new ClipboardItem({ "image/png": blob });
+        navigator.clipboard.write([item]); 
+    });
 }

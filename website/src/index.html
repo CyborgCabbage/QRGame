@@ -10,18 +10,32 @@
     <!-- https://dev.to/joxx/building-a-tab-component-with-pure-css-using-radio-and-label-tags-200b -->
     <div class="tabs">
       <!-- Radio Buttons -->
-      <input type="radio" name="tab" id="tab-play">
+      <input type="radio" name="tab" id="tab-play" autocomplete="off" checked>
       <label for="tab-play">Play</label>
 
-      <input type="radio" name="tab" id="tab-edit">
+      <input type="radio" name="tab" id="tab-share" autocomplete="off">
+      <label for="tab-share">Share</label>
+
+      <input type="radio" name="tab" id="tab-edit" autocomplete="off">
       <label for="tab-edit">Edit</label>
 
-      <input type="radio" name="tab" id="tab-code">
+      <input type="radio" name="tab" id="tab-code" autocomplete="off">
       <label for="tab-code">Code</label>
 
       <!-- Tab Content -->
       <div class="tab-content" id="tab-content-play">
           <canvas id="game-canvas" width="192" height="256"></canvas>
+          <p>
+            <button id="reload-button">Reload Game</button>
+          </p>
+      </div>
+
+      <div class="tab-content" id="tab-content-share">
+        <p>
+          <button id="url-button">URL to Clipboard</button>
+          <button id="qr-button">QR to Clipboard</button>
+        </p>
+        <canvas id="qr-canvas"></canvas>
       </div>
 
       <div class="tab-content" id="tab-content-edit">
@@ -32,11 +46,5 @@
           <!-- Code editor will be inserted here from JS -->
       </div>
     </div>
-    <p>
-      <button id="reload-button">Reload Game</button>
-      <button id="copy-button">Copy Script as URL</button>
-      <button id="qr-button">Toggle QR code</button>
-    </p>
-    <canvas id="qr-canvas"></canvas>
   </body>
 </html>
