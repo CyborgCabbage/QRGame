@@ -3,7 +3,9 @@ import {EditorView, basicSetup} from 'codemirror'
 import {StreamLanguage} from '@codemirror/language'
 import {lua} from '@codemirror/legacy-modes/mode/lua'
 import {correction, generate, ImageDataOptions} from 'lean-qr'
-import {Engine, Game} from './engine.js'
+import {Game} from './game.js'
+import {Engine} from './engine.js'
+import {Editor} from './editor.js'
 import * as fflate from 'fflate'
 import brotliPromise from 'brotli-wasm';
 const brotli = await brotliPromise;
@@ -31,9 +33,8 @@ for i = 1, 16 do
     sprs[i] = createSprite(c, i-1, 0, 0)
 end
 
-local text = createSprite('🍕araf🍔q5r32🍟3s r🌭32🍿qdf🧂4q🥓f🥚435🍳46tr🧇45g🥞64tg🧈45eg🍞df🥐23f🥨d🥯', 8, 0, 0)
-text.wrap = 12
-text.compact = true
+local text = createSprite('🍕', 8, 0, 0)
+text.drag = true
 
 local f = 0
 function frame()
@@ -110,14 +111,14 @@ function gameToEditor(game) {
     scriptInput.update([transaction]);
 }
 function editorToGame() {
-    return new Game(scriptInput.state.doc.toString());
+    return new Game(scriptInput.state.doc.toString(), "testing");
 }
 
 // Engine
 const engine = new Engine(gameCanvas);
 let game = urlToGame();
 if (game === null) {
-    game = new Game(INITIAL_SCRIPT);
+    game = new Game(INITIAL_SCRIPT, "testing");
 }
 gameToEditor(game);
 // (could load the game directly here but want to make sure the editor works properly)
